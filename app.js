@@ -159,7 +159,7 @@ function populateFields(tags) {
   fields.track.value = tagText(tags, 'track', 'TRCK');
   fields.genre.value = tagText(tags, 'genre', 'TCON');
   fields.comment.value = tagText(tags, 'comment', 'COMM');
-  fields.albumUrl.value = tagText(tags, 'WOAS');
+  fields.albumUrl.value = tagText(tags, 'WOAS', 'WXXX');
 
   const picture = tags.picture;
   if (picture?.data?.length) {
@@ -233,7 +233,14 @@ async function saveFile() {
     setTextFrame(writer, 'TALB', fields.album.value);
     setTextFrame(writer, 'TPE2', fields.albumArtist.value);
     setTextFrame(writer, 'TRCK', fields.track.value);
-    setTextFrame(writer, 'WOAS', albumUrl);
+    if (albumUrl) {
+      writer.setFrame('WOAS', albumUrl);
+      writer.setFrame('WXXX', {
+        description: 'Album URL',
+        value: albumUrl,
+        useUnicodeEncoding: false,
+      });
+    }
 
     if (fields.artist.value.trim()) writer.setFrame('TPE1', [fields.artist.value.trim()]);
     if (fields.genre.value.trim()) writer.setFrame('TCON', [fields.genre.value.trim()]);

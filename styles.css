@@ -369,6 +369,7 @@ h1 em { color: var(--green); font-style: normal; }
   font-weight: 700;
 }
 
+.field > .field-help { display: block; color: var(--muted); font-size: 10px; font-weight: 400; letter-spacing: 0; }
 .field small { color: #89938a; font: 9px var(--mono); }
 
 .field input, .field select, .field textarea {
