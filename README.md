@@ -28,16 +28,6 @@ MP3 dosyalarının ID3 etiketlerini düzenlemek için tarayıcıda çalışan, a
 
 Etiket okuma ID3v1 ve ID3v2 biçimlerini destekler. Kaydetme, düzenlenmiş alanlarla yeni bir ID3v2.3 etiket bloğu oluşturur ve MP3 ses verisini yeni dosyada korur. Mevcut ID3 etiket bloğu yenilendiği için bu sürümün desteklemediği ek çerçeveler korunmayabilir. Orijinal dosyanın üzerine yazılmaz.
 
-## Yerel çalıştırma
-
-ES modülleri nedeniyle sayfayı doğrudan `file://` üzerinden açmak yerine depo kökünde basit bir statik sunucu çalıştırın:
-
-```sh
-python3 -m http.server 8000
-```
-
-Ardından `http://localhost:8000` adresini açın. Sunucu yalnızca HTML, CSS ve JavaScript dosyalarını sunar; MP3 içeriği bu sunucuya gönderilmez.
-
 ## Açık kaynak
 
 Bu proje Apache License 2.0 altında özgür yazılımdır. Kaynak kodu bu GitHub deposunda incelenebilir; kullanılan JavaScript kütüphanelerinin lisansları `vendor/` altındadır.
