@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f4ef" />
+    <meta name="description" content="MP3 dosyalarının etiketlerini tarayıcınızda düzenleyin." />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <title>MP3 Meta Veri Düzenleyici</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="./vendor/jsmediatags/jsmediatags.min.js"></script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="MP3 Meta ana sayfa">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span>MP3 <strong>META</strong></span>
+      </a>
+      <div class="privacy-indicator"><span class="privacy-dot"></span> DOSYALARINIZ CİHAZINIZDA KALIR</div>
+    </header>
+
+    <main class="page-shell">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">KÜTÜPHANE ARAÇLARI <span>/</span> ETİKET DÜZENLEYİCİ</p>
+          <h1 id="page-title">Parça bilgilerini <em>düzenle.</em></h1>
+          <p class="intro-copy">MP3 etiketlerini düzelt, kapağı yenile ve arşivine uygun adla indir.</p>
+        </div>
+        <div class="intro-stamp" aria-hidden="true">
+          <span>LOCAL</span>
+          <span>BY DESIGN</span>
+          <b>01</b>
+        </div>
+      </section>
+
+      <div id="status-message" class="status-message" role="status" aria-live="polite" hidden></div>
+
+      <div class="workspace">
+        <aside class="file-column" aria-label="Dosya ve kapak">
+          <section class="panel file-panel">
+            <div class="section-heading">
+              <span class="section-index">01</span>
+              <h2>MP3 dosyası</h2>
+            </div>
+
+            <div id="drop-zone" class="drop-zone">
+              <div class="drop-icon" aria-hidden="true"><span>↓</span></div>
+              <p class="drop-title">Dosyanı buraya bırak</p>
+              <p class="drop-caption">veya bilgisayarından seç</p>
+              <button id="open-button" class="button button-secondary" type="button">MP3 seç</button>
+              <input id="file-input" class="visually-hidden" type="file" accept=".mp3,audio/mpeg" />
+            </div>
+
+            <div id="file-details" class="file-details" hidden>
+              <div class="file-identity">
+                <span class="file-type">MP3</span>
+                <div class="file-copy">
+                  <strong id="file-name"></strong>
+                  <span id="file-size"></span>
+                </div>
+                <button id="replace-button" class="icon-button" type="button" title="Başka MP3 seç" aria-label="Başka MP3 seç">↻</button>
+              </div>
+              <audio id="audio-player" class="audio-player" controls preload="metadata" aria-label="Seçilen MP3'ü dinle"></audio>
+            </div>
+
+            <div class="privacy-note">
+              <span class="privacy-lock" aria-hidden="true">●</span>
+              <p>Uygulama MP3, etiket veya kapak verisi toplamaz, saklamaz ya da göndermez. İşlem bu tarayıcıda yapılır.</p>
+            </div>
+          </section>
+
+          <section class="panel artwork-panel">
+            <div class="section-heading">
+              <span class="section-index">02</span>
+              <h2>Albüm kapağı</h2>
+            </div>
+            <div class="artwork-frame">
+              <div id="cover-empty" class="cover-empty">
+                <span class="cover-disc" aria-hidden="true"><i></i></span>
+                <span>KAPAK YOK</span>
+              </div>
+              <img id="cover-image" alt="MP3 albüm kapağı önizlemesi" hidden />
+            </div>
+            <div class="artwork-actions">
+              <button id="cover-button" class="button button-secondary" type="button">Kapak seç</button>
+              <button id="remove-cover" class="text-button" type="button">Kaldır</button>
+              <input id="cover-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
+            </div>
+            <p class="field-hint">JPG, PNG veya WebP</p>
+          </section>
+        </aside>
+
+        <section class="panel editor-panel" aria-labelledby="editor-title">
+          <div class="editor-heading">
+            <div class="section-heading">
+              <span class="section-index">03</span>
+              <h2 id="editor-title">Etiket bilgileri</h2>
+            </div>
+            <span class="format-label">ID3 TAGS</span>
+          </div>
+
+          <div id="empty-state" class="empty-state">
+            <span class="empty-number">01 / 01</span>
+            <div class="empty-rule"></div>
+            <h3>Önce bir parça seç</h3>
+            <p>Etiketleri burada düzenleyebilir, kaydetmeden önce dosya adını görebilirsin.</p>
+          </div>
+
+          <form id="tag-form" class="tag-form" hidden>
+            <div class="field-grid">
+              <label class="field field-wide" for="title">
+                <span>Parça başlığı</span>
+                <input id="title" name="title" type="text" placeholder="Başlık" autocomplete="off" />
+              </label>
+              <label class="field" for="artist">
+                <span>Sanatçı</span>
+                <input id="artist" name="artist" type="text" placeholder="Sanatçı adı" autocomplete="off" />
+              </label>
+              <label class="field" for="album-artist">
+                <span>Albüm sanatçısı</span>
+                <input id="album-artist" name="albumArtist" type="text" placeholder="Albüm sanatçısı" autocomplete="off" />
+              </label>
+              <label class="field field-wide" for="album">
+                <span>Albüm</span>
+                <input id="album" name="album" type="text" placeholder="Albüm adı" autocomplete="off" />
+              </label>
+              <div class="field-pair">
+                <label class="field" for="year">
+                  <span>Yıl <small>İSTEĞE BAĞLI</small></span>
+                  <input id="year" name="year" type="number" min="1000" max="9999" inputmode="numeric" placeholder="2024" />
+                </label>
+                <label class="field" for="month">
+                  <span>Ay <small>İSTEĞE BAĞLI</small></span>
+                  <select id="month" name="month">
+                    <option value="">Belirtilmedi</option>
+                    <option value="01">01 · Ocak</option>
+                    <option value="02">02 · Şubat</option>
+                    <option value="03">03 · Mart</option>
+                    <option value="04">04 · Nisan</option>
+                    <option value="05">05 · Mayıs</option>
+                    <option value="06">06 · Haziran</option>
+                    <option value="07">07 · Temmuz</option>
+                    <option value="08">08 · Ağustos</option>
+                    <option value="09">09 · Eylül</option>
+                    <option value="10">10 · Ekim</option>
+                    <option value="11">11 · Kasım</option>
+                    <option value="12">12 · Aralık</option>
+                  </select>
+                </label>
+              </div>
+              <div class="field-pair">
+                <label class="field" for="track">
+                  <span>Parça numarası</span>
+                  <input id="track" name="track" type="text" inputmode="numeric" placeholder="01" autocomplete="off" />
+                </label>
+                <label class="field" for="genre">
+                  <span>Tür</span>
+                  <input id="genre" name="genre" type="text" placeholder="Tür" autocomplete="off" />
+                </label>
+              </div>
+              <label class="field field-wide" for="comment">
+                <span>Yorum <small>İSTEĞE BAĞLI</small></span>
+                <textarea id="comment" name="comment" rows="3" placeholder="Bu parça hakkında bir not..."></textarea>
+              </label>
+            </div>
+
+            <div class="download-section">
+              <div class="download-heading">
+                <div>
+                  <p class="overline">DOSYA ADI ÖNİZLEMESİ</p>
+                  <p id="filename-preview" class="filename-preview">duzenlenmis-parca.mp3</p>
+                </div>
+                <span class="extension-chip">.MP3</span>
+              </div>
+              <p class="filename-hint">Yıl ve ay isteğe bağlıdır. Boş alanlar dosya adından çıkarılır.</p>
+              <button id="save-button" class="button button-primary" type="button" disabled>
+                <span id="save-label">Düzenlenmiş MP3'ü indir</span>
+                <span class="button-arrow" aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="compatibility-note">
+            <span class="note-mark" aria-hidden="true">i</span>
+            <p>Kaydetme ID3v2.3 oluşturur ve mevcut ID3 etiket bloğunu yeniler. Ses verisi korunur; bu sürümde desteklenmeyen etiket alanları korunmayabilir.</p>
+          </div>
+        </section>
+      </div>
+
+      <footer class="page-footer">
+        <span>MP3 META EDITOR</span>
+        <span>YEREL İŞLEME <i></i> SIFIR YÜKLEME</span>
+      </footer>
+      <div class="footer-disclosures">
+        <a href="https://github.com/kinefi/mp3metaeditor" target="_blank" rel="noopener noreferrer">Özgür yazılımdır. Kaynak kodunu GitHub'da inceleyin ↗</a>
+        <p>Barındırma notu: GitHub Pages, sayfa istekleri için IP adresi ve bağlantı metaverisi gibi günlükleri işleyebilir.</p>
+      </div>
+    </main>
+  </body>
+</html>
