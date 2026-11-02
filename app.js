@@ -2,6 +2,9 @@ import { ID3Writer } from './vendor/browser-id3-writer/browser-id3-writer.mjs';
 
 const byId = (id) => document.getElementById(id);
 const form = byId('tag-form');
+const COVER_MAX_BYTES = 500 * 1024;
+const COVER_MAX_DIMENSION = 1000;
+const COVER_MIN_SCALE = 0.1;
 const fields = {
   title: byId('title'),
   artist: byId('artist'),
@@ -26,6 +29,7 @@ const state = {
 };
 
 function valueOf(tag) {
+  if (tag && typeof tag === 'object' && typeof tag.text === 'string') return tag.text;
   const value = tag && typeof tag === 'object' && 'data' in tag ? tag.data : tag;
   if (Array.isArray(value)) return value.join('; ');
   return value == null ? '' : String(value);
@@ -264,12 +268,12 @@ async function saveFile() {
 async function compressCover(file) {
   const image = await createImageBitmap(file);
   const largestDimension = Math.max(image.width, image.height);
-  if (file.size <= 512 * 1024 && largestDimension <= 1400) {
+  if (file.size <= COVER_MAX_BYTES && largestDimension <= COVER_MAX_DIMENSION) {
     image.close();
-    return { blob: file, optimized: false };
+    return { blob: file, optimized: false, unchanged: false };
   }
 
-  let scale = Math.min(1, 1400 / largestDimension);
+  let scale = Math.min(1, COVER_MAX_DIMENSION / largestDimension);
   const probeCanvas = document.createElement('canvas');
   probeCanvas.width = Math.max(1, Math.round(image.width * scale));
   probeCanvas.height = Math.max(1, Math.round(image.height * scale));
@@ -280,7 +284,7 @@ async function compressCover(file) {
   }
   probeContext.drawImage(image, 0, 0, probeCanvas.width, probeCanvas.height);
   const pixels = probeContext.getImageData(0, 0, probeCanvas.width, probeCanvas.height).data;
-  let hasTransparency = file.type === 'image/png';
+  let hasTransparency = false;
   for (let index = 3; !hasTransparency && index < pixels.length; index += 4) {
     hasTransparency = pixels[index] < 255;
   }
@@ -288,7 +292,7 @@ async function compressCover(file) {
   let blob;
 
   try {
-    while (scale >= 0.25) {
+    while (scale >= COVER_MIN_SCALE) {
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(image.width * scale));
       canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -304,16 +308,19 @@ async function compressCover(file) {
       for (const quality of qualities) {
         blob = await new Promise((resolve) => canvas.toBlob(resolve, type, quality));
         if (!blob) throw new Error('Kapak görseli sıkıştırılamadı.');
-        if (blob.size <= 900 * 1024 || quality === qualities.at(-1)) break;
+        if (blob.size <= COVER_MAX_BYTES || quality === qualities.at(-1)) break;
       }
-      if (blob.size <= 900 * 1024 || scale <= 0.25) break;
-      scale *= 0.75;
+      if (blob.size <= COVER_MAX_BYTES || scale <= COVER_MIN_SCALE) break;
+      scale = Math.max(COVER_MIN_SCALE, scale * 0.75);
     }
   } finally {
     image.close();
   }
 
-  return { blob, optimized: true };
+  if (!blob || blob.size >= file.size) {
+    return { blob: file, optimized: false, unchanged: true };
+  }
+  return { blob, optimized: true, unchanged: false };
 }
 
 async function handleCoverFile(file) {
@@ -327,9 +334,13 @@ async function handleCoverFile(file) {
     state.coverType = result.blob.type;
     state.cover = await result.blob.arrayBuffer();
     updateCoverPreview(result.blob);
-    setStatus(result.optimized
-      ? `Kapak tarayıcıda optimize edildi: ${fileSize(file.size)} → ${fileSize(result.blob.size)}.`
-      : 'Kapak görseli eklendi.');
+    if (result.unchanged) {
+      setStatus(`Daha küçük çıktı üretilemedi; kapak büyümemesi için orijinal haliyle eklendi (${fileSize(file.size)}).`, 'warning');
+    } else if (result.optimized) {
+      setStatus(`Kapak tarayıcıda optimize edildi: ${fileSize(file.size)} → ${fileSize(result.blob.size)}.`);
+    } else {
+      setStatus('Kapak görseli eklendi.');
+    }
   } catch (error) {
     setStatus(`Kapak görseli işlenemedi: ${error?.message || 'Bilinmeyen hata'}`, 'error');
   }

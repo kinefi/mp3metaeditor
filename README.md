@@ -11,7 +11,7 @@ MP3 dosyalarının ID3 etiketlerini düzenlemek için tarayıcıda çalışan, a
 - Başlık, sanatçı, albüm sanatçısı, albüm, yıl, ay, parça numarası, tür ve yorum etiketlerini görüntüleme ve düzenleme
 - Albüm veya kaynak sayfası URL'sini ID3 `WOAS` etiketi olarak ekleme ve düzenleme
 - Albüm kapağını görüntüleme, değiştirme veya kaldırma
-- 512 KB veya 1400 px’i aşan kapakları tarayıcıda optimize etme; PNG ve şeffaf WebP görsellerinde alpha kanalını koruma
+- Kapakları en fazla 1000 px ve 500 KB hedefiyle tarayıcıda optimize etme; saydam görsellerde alpha kanalını koruma
 - Düzenlenen dosyayı yeni bir MP3 olarak indirme
 - İndirme adını `Yıl - Ay - Albüm - Parça No - Başlık (Sanatçı).mp3` şablonunda oluşturma; yıl ve ay isteğe bağlıdır, boş alanlar ve gereksiz ayraçlar atlanır
 - Dosyaları tarayıcıda işleme; dosya adı için geçersiz karakterleri temizleme
