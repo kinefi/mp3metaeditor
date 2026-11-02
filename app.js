@@ -12,6 +12,7 @@ const fields = {
   track: byId('track'),
   genre: byId('genre'),
   comment: byId('comment'),
+  albumUrl: byId('album-url'),
 };
 
 const state = {
@@ -154,6 +155,7 @@ function populateFields(tags) {
   fields.track.value = tagText(tags, 'track', 'TRCK');
   fields.genre.value = tagText(tags, 'genre', 'TCON');
   fields.comment.value = tagText(tags, 'comment', 'COMM');
+  fields.albumUrl.value = tagText(tags, 'WOAS');
 
   const picture = tags.picture;
   if (picture?.data?.length) {
@@ -212,11 +214,22 @@ async function saveFile() {
   setStatus('MP3 hazırlanıyor...');
 
   try {
+    const rawAlbumUrl = fields.albumUrl.value.trim();
+    let albumUrl = '';
+    if (rawAlbumUrl) {
+      const parsedUrl = new URL(rawAlbumUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        throw new Error('URL http:// veya https:// ile başlamalıdır.');
+      }
+      albumUrl = parsedUrl.href;
+    }
+
     const writer = new ID3Writer(await arrayBufferFromFile(state.file));
     setTextFrame(writer, 'TIT2', fields.title.value);
     setTextFrame(writer, 'TALB', fields.album.value);
     setTextFrame(writer, 'TPE2', fields.albumArtist.value);
     setTextFrame(writer, 'TRCK', fields.track.value);
+    setTextFrame(writer, 'WOAS', albumUrl);
 
     if (fields.artist.value.trim()) writer.setFrame('TPE1', [fields.artist.value.trim()]);
     if (fields.genre.value.trim()) writer.setFrame('TCON', [fields.genre.value.trim()]);
@@ -248,18 +261,78 @@ async function saveFile() {
   }
 }
 
-function handleCoverFile(file) {
+async function compressCover(file) {
+  const image = await createImageBitmap(file);
+  const largestDimension = Math.max(image.width, image.height);
+  if (file.size <= 512 * 1024 && largestDimension <= 1400) {
+    image.close();
+    return { blob: file, optimized: false };
+  }
+
+  let scale = Math.min(1, 1400 / largestDimension);
+  const probeCanvas = document.createElement('canvas');
+  probeCanvas.width = Math.max(1, Math.round(image.width * scale));
+  probeCanvas.height = Math.max(1, Math.round(image.height * scale));
+  const probeContext = probeCanvas.getContext('2d', { willReadFrequently: true });
+  if (!probeContext) {
+    image.close();
+    throw new Error('Görsel düzenleyici başlatılamadı.');
+  }
+  probeContext.drawImage(image, 0, 0, probeCanvas.width, probeCanvas.height);
+  const pixels = probeContext.getImageData(0, 0, probeCanvas.width, probeCanvas.height).data;
+  let hasTransparency = file.type === 'image/png';
+  for (let index = 3; !hasTransparency && index < pixels.length; index += 4) {
+    hasTransparency = pixels[index] < 255;
+  }
+  const type = hasTransparency ? 'image/png' : 'image/jpeg';
+  let blob;
+
+  try {
+    while (scale >= 0.25) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Görsel düzenleyici başlatılamadı.');
+      if (type === 'image/jpeg') {
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const qualities = type === 'image/jpeg' ? [0.86, 0.76, 0.66, 0.56] : [undefined];
+      for (const quality of qualities) {
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+        if (!blob) throw new Error('Kapak görseli sıkıştırılamadı.');
+        if (blob.size <= 900 * 1024 || quality === qualities.at(-1)) break;
+      }
+      if (blob.size <= 900 * 1024 || scale <= 0.25) break;
+      scale *= 0.75;
+    }
+  } finally {
+    image.close();
+  }
+
+  return { blob, optimized: true };
+}
+
+async function handleCoverFile(file) {
   if (!file) return;
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
     setStatus('Kapak görseli JPG, PNG veya WebP olmalıdır.', 'error');
     return;
   }
-  state.coverType = file.type;
-  file.arrayBuffer().then((buffer) => {
-    state.cover = buffer;
-    updateCoverPreview(file);
-    setStatus('Kapak görseli güncellendi.');
-  }).catch(() => setStatus('Kapak görseli okunamadı.', 'error'));
+  try {
+    const result = await compressCover(file);
+    state.coverType = result.blob.type;
+    state.cover = await result.blob.arrayBuffer();
+    updateCoverPreview(result.blob);
+    setStatus(result.optimized
+      ? `Kapak tarayıcıda optimize edildi: ${fileSize(file.size)} → ${fileSize(result.blob.size)}.`
+      : 'Kapak görseli eklendi.');
+  } catch (error) {
+    setStatus(`Kapak görseli işlenemedi: ${error?.message || 'Bilinmeyen hata'}`, 'error');
+  }
 }
 
 byId('open-button').addEventListener('click', () => byId('file-input').click());

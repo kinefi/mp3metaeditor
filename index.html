@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4f4ef" />
     <meta name="description" content="MP3 dosyalarının etiketlerini tarayıcınızda düzenleyin." />
+    <link rel="canonical" href="https://kinefi.github.io/mp3metaeditor/" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
     <title>MP3 Meta Veri Düzenleyici</title>
     <link rel="stylesheet" href="styles.css" />
@@ -87,7 +88,7 @@
               <button id="remove-cover" class="text-button" type="button">Kaldır</button>
               <input id="cover-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
             </div>
-            <p class="field-hint">JPG, PNG veya WebP</p>
+            <p class="field-hint">JPG, PNG veya WebP. Büyük görseller tarayıcıda optimize edilir; PNG ve WebP şeffaflığı korunur.</p>
           </section>
         </aside>
 
@@ -159,6 +160,10 @@
                   <input id="genre" name="genre" type="text" placeholder="Tür" autocomplete="off" />
                 </label>
               </div>
+              <label class="field field-wide" for="album-url">
+                <span>Albüm / kaynak sayfası URL'si <small>İSTEĞE BAĞLI</small></span>
+                <input id="album-url" name="albumUrl" type="url" placeholder="https://ornek.com/album" autocomplete="url" />
+              </label>
               <label class="field field-wide" for="comment">
                 <span>Yorum <small>İSTEĞE BAĞLI</small></span>
                 <textarea id="comment" name="comment" rows="3" placeholder="Bu parça hakkında bir not..."></textarea>
